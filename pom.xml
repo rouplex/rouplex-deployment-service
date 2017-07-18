@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.rouplex</groupId>
+    <artifactId>deployment-service-parent</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>Rouplex Deployment Service</name>
+    <description>
+        Used for deployments of services in heterogeneous clouds.
+    </description>
+    <url>https://github.com/rouplex/rouplex-deployment-service</url>
+
+    <licenses>
+        <license>
+            <name>FreeBSD</name>
+            <url>https://www.freebsd.org/copyright/freebsd-license.html</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <jdk>1.8</jdk>
+        <maven.compiler.source>${jdk}</maven.compiler.source>
+        <maven.compiler.target>${jdk}</maven.compiler.target>
+    </properties>
+
+    <scm>
+        <url>https://github.com/rouplex/rouplex-deployment-service</url>
+    </scm>
+
+    <developers>
+        <developer>
+            <name>Andi Mullaraj</name>
+            <email>andimullaraj@gmail.com</email>
+        </developer>
+    </developers>
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.rouplex</groupId>
+                <artifactId>rouplex-platform-jaxrs</artifactId>
+                <version>1.0.2-SNAPSHOT</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.rouplex</groupId>
+                <artifactId>rouplex-platform-jersey</artifactId>
+                <version>1.0.2-SNAPSHOT</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.rouplex</groupId>
+                <artifactId>deployment-service-api</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.rouplex</groupId>
+                <artifactId>deployment-management-service-api</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.rouplex</groupId>
+                <artifactId>deployment-service-provider</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.rouplex</groupId>
+                <artifactId>deployment-management-agent</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>2.10</version>
+                <executions>
+                    <execution>
+                        <id>analyze</id>
+                        <goals>
+                            <goal>analyze-only</goal>
+                        </goals>
+                        <configuration>
+                            <failOnWarning>false</failOnWarning>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <modules>
+        <module>deployment-service-api</module>
+        <module>deployment-management-service-api</module>
+        <module>deployment-service-provider</module>
+        <module>deployment-service-provider-jersey</module>
+        <module>deployment-management-service-agent</module>
+    </modules>
+</project>

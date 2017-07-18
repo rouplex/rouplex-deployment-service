@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.rouplex</groupId>
+        <artifactId>deployment-service-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>deployment-service-provider</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <dependencies>
+        <!-- Service provider always depends on the interface it is implementing -->
+        <dependency>
+            <groupId>org.rouplex</groupId>
+            <artifactId>deployment-service-api</artifactId>
+        </dependency>
+
+        <!-- Service provider always depends on the interface it is implementing -->
+        <dependency>
+            <groupId>org.rouplex</groupId>
+            <artifactId>deployment-management-service-api</artifactId>
+        </dependency>
+
+        <!-- Some basic/common functionality-->
+        <dependency>
+            <groupId>org.rouplex</groupId>
+            <artifactId>rouplex-commons</artifactId>
+            <version>1.0.2-SNAPSHOT</version>
+        </dependency>
+
+        <!-- EC2 api for managing remote ec2 hosts/instances -->
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-ec2</artifactId>
+            <version>1.11.115</version>
+        </dependency>
+    </dependencies>
+</project>
