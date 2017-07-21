@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.rouplex</groupId>
-    <artifactId>deployment-service-parent</artifactId>
+    <artifactId>rouplex-deployment-service-parent</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
@@ -69,25 +69,19 @@
 
             <dependency>
                 <groupId>org.rouplex</groupId>
-                <artifactId>deployment-service-api</artifactId>
+                <artifactId>rouplex-deployment-service-api</artifactId>
                 <version>1.0.0-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>org.rouplex</groupId>
-                <artifactId>deployment-management-service-api</artifactId>
+                <artifactId>rouplex-deployment-management-service-api</artifactId>
                 <version>1.0.0-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>org.rouplex</groupId>
-                <artifactId>deployment-service-provider</artifactId>
-                <version>1.0.0-SNAPSHOT</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.rouplex</groupId>
-                <artifactId>deployment-management-agent</artifactId>
+                <artifactId>rouplex-deployment-service-provider</artifactId>
                 <version>1.0.0-SNAPSHOT</version>
             </dependency>
         </dependencies>
@@ -115,10 +109,10 @@
     </build>
 
     <modules>
-        <module>deployment-service-api</module>
-        <module>deployment-management-service-api</module>
-        <module>deployment-service-provider</module>
-        <module>deployment-service-provider-jersey</module>
-        <module>deployment-management-service-agent</module>
+        <module>rouplex-deployment-service-api</module>
+        <module>rouplex-deployment-management-service-api</module>
+        <module>rouplex-deployment-service-provider</module>
+        <module>rouplex-deployment-service-provider-jersey</module>
+        <module>rouplex-deployment-management-service-agent</module>
     </modules>
 </project>

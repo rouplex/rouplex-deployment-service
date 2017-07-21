@@ -27,9 +27,9 @@ will be installed in your local maven repo.
 `mvn test` will execute all the tests and the console output should show success upon finishing.
 
 # Run #
-To run locally and mostly for debugging purposes, type `cd deployment-service-provider-jersey; mvn tomcat7:run` on a
+To run locally and mostly for debugging purposes, type `cd rouplex-deployment-service-provider-jersey; mvn tomcat7:run` on a
 shell window to start the server then `mvn exec:java` on a separate window to start a browser client (pointing at
-http://localhost:8080/deployment-service-provider-jersey/webjars/swagger-ui/2.2.5/index.html?url=http://localhost:8080/deployment-service-provider-jersey/rouplex/swagger.json)
+http://localhost:8080/rouplex-deployment-service-provider-jersey/webjars/swagger-ui/2.2.5/index.html?url=http://localhost:8080/rouplex-deployment-service-provider-jersey/rouplex/swagger.json)
 Refer to the API section for details on requests and related responses.
 
 # Deploy #
@@ -41,7 +41,7 @@ To deploy and run remotely on an App server you must make sure you follow these 
 `wget http://archive.apache.org/dist/tomcat/tomcat-8/v8.5.12/bin/apache-tomcat-8.5.12.tar.gz; tar -xvf apache-tomcat-8.5.12.tar.gz`
 
 1. A server key and certificate is required to run the test servers. You can create your own or you can copy the
-keystore at rouplex-deployment-service/deployment-service-provider/src/test/resources/server-keystore somewhere on your
+keystore at rouplex-deployment-service/rouplex-deployment-service-provider/src/test/resources/server-keystore somewhere on your
 host. Let say you copied it on $TOMCAT_HOME/conf/server-keystore. The keystore password is "kotplot" without the quotes.
 
 1. The test servers must be configured to find the geoLocation of the keystore. That can be done by editing
@@ -67,63 +67,9 @@ deployment (or one can opt for a static deployment, equivalent, but out of the s
 <user username="tomcat" password="<password>" roles="manager-gui"/>
 </tomcat-users>
 ```
-1. Deploy the deployment service by uploading it in tomcat via deploy button (context path will be: deployment-service-provider-jersey-1.0.0-SNAPSHOT/).
+1. Deploy the deployment service by uploading it in tomcat via deploy button (context path will be: rouplex-deployment-service-provider-jersey-1.0.0-SNAPSHOT/).
 
-1. Use the browser to get to url (http://domain.com:8080/deployment-service-provider-jersey-1.0.0-SNAPSHOT/webjars/swagger-ui/2.2.5/index.html?url=http://domain.com:8080/deployment-service-provider-jersey-1.0-SNAPSHOT/rouplex/swagger.json)
-
-1. The UI is not fancy but quite intuitive. You can click the yellowish area on the right side to have a template copied
-on the left which you can then modify prior to trying it via the Try button. Use something like this snippet to start a
-new echo server:
-
-```json
-{
-  "provider": "ROUPLEX_NIOSSL",
-  "hostname": null,
-  "port": 8888,
-  "ssl": true,
-  "useSharedBinder": false,
-  "optionalSocketSendBufferSize": 0,
-  "optionalSocketReceiveBufferSize": 0,
-  "metricsAggregation": {
-    "aggregateSslWithPlain": false,
-    "aggregateServerAddresses": true,
-    "aggregateServerPorts": true,
-    "aggregateClientAddresses": true,
-    "aggregateClientPorts": true
-  },
-  "optionalBacklog": 1000
-}
-```
-The result will show the effective ip address (xx.xx.xx.xx), hostname, and port (pppp)
-
-1. Use something like this snippet to start a 1000 clients sending requests and collecting responses from echo server:
-```json
-{
-  "provider": "ROUPLEX_NIOSSL",
-  "hostname": "xx.xx.xx.xx",
-  "port": pppp,
-  "ssl": true,
-  "useSharedBinder": false,
-  "optionalSocketSendBufferSize": 0,
-  "optionalSocketReceiveBufferSize": 0,
-  "metricsAggregation": {
-    "aggregateSslWithPlain": false,
-    "aggregateServerAddresses": true,
-    "aggregateServerPorts": true,
-    "aggregateClientAddresses": true,
-    "aggregateClientPorts": true
-  },
-  "clientCount": 1000,
-  "minPayloadSize": 1000,
-  "maxPayloadSize": 1001,
-  "minDelayMillisBetweenSends": 100,
-  "maxDelayMillisBetweenSends": 101,
-  "minDelayMillisBeforeCreatingClient": 0,
-  "maxDelayMillisBeforeCreatingClient": 10000,
-  "minClientLifeMillis": 20000,
-  "maxClientLifeMillis": 20001
-}
-```
+1. Use the browser to get to url (http://domain.com:8080/rouplex-deployment-service-provider-jersey-1.0.0-SNAPSHOT/webjars/swagger-ui/2.2.5/index.html?url=http://domain.com:8080/rouplex-deployment-service-provider-jersey-1.0-SNAPSHOT/rouplex/swagger.json)
 
 # Configure Host (Optional) #
 
