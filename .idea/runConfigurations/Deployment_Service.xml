@@ -3,7 +3,7 @@
     <option name="OPEN_IN_BROWSER_URL" value="http://localhost:8080/rouplex-deployment-service-provider-jersey/webjars/swagger-ui/2.2.5/index.html?url=http://localhost:8080/rouplex-deployment-service-provider-jersey/rest/swagger.json" />
     <option name="UPDATING_POLICY" value="restart-server" />
     <deployment>
-      <artifact name="deployment-service-provider-jersey:war exploded">
+      <artifact name="rouplex-deployment-service-provider-jersey:war exploded">
         <settings>
           <option name="CONTEXT_PATH" value="/rouplex-deployment-service-provider-jersey" />
         </settings>
@@ -68,7 +68,7 @@
     </ConfigurationWrapper>
     <method>
       <option name="BuildArtifacts" enabled="true">
-        <artifact name="deployment-service-provider-jersey:war exploded" />
+        <artifact name="rouplex-deployment-service-provider-jersey:war exploded" />
       </option>
     </method>
   </configuration>

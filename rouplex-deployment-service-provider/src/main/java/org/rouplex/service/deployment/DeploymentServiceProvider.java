@@ -109,11 +109,13 @@ public class DeploymentServiceProvider implements DeploymentService, ManagementS
 
             ValidationUtils.checkNonNullArg(deploymentConfiguration, "deploymentConfiguration");
 
-            try {
-                TimeUtils.convertIsoInstantToMillis(deploymentConfiguration.getLeaseExpirationDateTime());
-            } catch (Exception e) {
-                throw new Exception(String.format("Unparsable leaseExpirationDateTime [%s]",
-                    deploymentConfiguration.getLeaseExpirationDateTime()));
+            if (deploymentConfiguration.getLeaseExpirationDateTime() != null) {
+                try {
+                    TimeUtils.convertIsoInstantToMillis(deploymentConfiguration.getLeaseExpirationDateTime());
+                } catch (ParseException pe) {
+                    throw new Exception(String.format("Unparsable leaseExpirationDateTime [%s]",
+                        deploymentConfiguration.getLeaseExpirationDateTime()));
+                }
             }
 
             logger.fine(String.format("Creating ec2 cluster for deployment [%s]", deploymentId));
