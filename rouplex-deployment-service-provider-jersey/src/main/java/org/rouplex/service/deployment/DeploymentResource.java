@@ -5,14 +5,11 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import org.glassfish.jersey.server.ResourceConfig;
-import org.rouplex.service.deployment.management.ManagementService;
-import org.rouplex.service.deployment.management.UpdateHostStateRequest;
-import org.rouplex.service.deployment.management.UpdateHostStateResponse;
 
 import java.util.Set;
 
 @Api(value = "Deployment Service", description = "Service offering cloud deployment functionality")
-public class DeploymentResource extends ResourceConfig implements DeploymentService, ManagementService {
+public class DeploymentResource extends ResourceConfig implements DeploymentService {
 
     @ApiOperation(value = "Create a deployment (service to be deployed)")
     @ApiResponses(value = {
@@ -84,10 +81,5 @@ public class DeploymentResource extends ResourceConfig implements DeploymentServ
     @Override
     public void destroyEc2Cluster(String deploymentId, String clusterId) throws Exception {
         DeploymentServiceProvider.get().destroyEc2Cluster(deploymentId, clusterId);
-    }
-
-    @Override
-    public UpdateHostStateResponse updateHostState(String hostId, UpdateHostStateRequest request) throws Exception {
-        return DeploymentServiceProvider.get().updateHostState(hostId, request);
     }
 }

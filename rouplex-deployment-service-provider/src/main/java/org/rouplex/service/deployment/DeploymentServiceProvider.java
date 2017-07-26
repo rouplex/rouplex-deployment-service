@@ -1,5 +1,8 @@
 package org.rouplex.service.deployment;
 
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
@@ -53,9 +56,18 @@ public class DeploymentServiceProvider implements DeploymentService, ManagementS
     public void createDeployment(String deploymentId, CreateDeploymentRequest request) throws Exception {
         ValidationUtils.checkNonNullArg(deploymentId, "deploymentId");
         ValidationUtils.checkNonNullArg(request, "createDeploymentRequest");
+
+        DeploymentConfiguration depolymentConfiguration = request.getDeploymentConfiguration();
+        ValidationUtils.checkNonNullArg(depolymentConfiguration, "deploymentConfiguration");
+
+        ValidationUtils.checkNonNegativeArg(depolymentConfiguration.getLostHostIntervalMillis(), "lostHostIntervalMillis");
+        if (depolymentConfiguration.getLeaseExpirationDateTime() != null) {
+            ValidationUtils.checkDateTimeString(depolymentConfiguration.getLeaseExpirationDateTime(), "leaseExpirationDateTime");
+        }
+
         logger.fine(String.format("Creating deployment [%s]", deploymentId));
 
-        Deployment deployment = new Deployment(deploymentId, request.getDeploymentConfiguration());
+        Deployment deployment = new Deployment(deploymentId, depolymentConfiguration);
         if (deployments.putIfAbsent(deploymentId, deployment) != null) {
             throw new IllegalStateException(String.format(
                 "Deployment [%s] is already registered", deploymentId));
@@ -100,8 +112,7 @@ public class DeploymentServiceProvider implements DeploymentService, ManagementS
         synchronized (deployment) {
             if (!deployments.containsKey(deploymentId)) {
                 // competing deployment delete
-                throw new IllegalStateException(String.format(
-                    "Deployment [%s] not found", deploymentId));
+                throw new IllegalStateException(String.format("Deployment [%s] not found", deploymentId));
             }
 
             DeploymentConfiguration deploymentConfiguration = request.getDeploymentConfiguration() != null ?
@@ -321,9 +332,26 @@ public class DeploymentServiceProvider implements DeploymentService, ManagementS
             AmazonEC2 amazonEc2Client = amazonEc2Clients.get(geoLocation);
 
             if (amazonEc2Client == null) {
-                amazonEc2Client = AmazonEC2ClientBuilder.standard()
-                    .withRegion(Regions.fromName(geoLocation.toString())).build();
+                AmazonEC2ClientBuilder amazonEC2ClientBuilder = AmazonEC2ClientBuilder.standard()
+                    .withRegion(Regions.fromName(geoLocation.toString()));
 
+                // todo comment out this block -- used very rarely when testing from local host
+                String awsAccessKey = System.getenv("awsAccessKey");
+                String awsSecretKey = System.getenv("awsSecretKey");
+                if (awsAccessKey != null && awsSecretKey != null) {
+                    amazonEC2ClientBuilder.withCredentials(new AWSCredentialsProvider() {
+                        @Override
+                        public AWSCredentials getCredentials() {
+                            return new BasicAWSCredentials(awsAccessKey, awsSecretKey);
+                        }
+
+                        @Override
+                        public void refresh() {
+                        }
+                    });
+                }
+
+                amazonEc2Client = amazonEC2ClientBuilder.build();
                 amazonEc2Clients.put(geoLocation, amazonEc2Client);
             }
 

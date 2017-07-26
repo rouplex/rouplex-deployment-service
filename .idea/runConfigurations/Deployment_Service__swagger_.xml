@@ -1,11 +1,11 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Deployment Service" type="#com.intellij.j2ee.web.tomcat.TomcatRunConfigurationFactory" factoryName="Local" APPLICATION_SERVER_NAME="Tomcat 8.5.12" ALTERNATIVE_JRE_ENABLED="false">
-    <option name="OPEN_IN_BROWSER_URL" value="http://localhost:8080/rouplex-deployment-service-provider-jersey/webjars/swagger-ui/2.2.5/index.html?url=http://localhost:8080/rouplex-deployment-service-provider-jersey/rest/swagger.json" />
+  <configuration default="false" name="Deployment Service (swagger)" type="#com.intellij.j2ee.web.tomcat.TomcatRunConfigurationFactory" factoryName="Local" APPLICATION_SERVER_NAME="Tomcat 8.5.12" ALTERNATIVE_JRE_ENABLED="false">
+    <option name="OPEN_IN_BROWSER_URL" value="http://localhost:8080/webjars/swagger-ui/2.2.5/index.html?url=http://localhost:8080/rest/swagger.json" />
     <option name="UPDATING_POLICY" value="restart-server" />
     <deployment>
-      <artifact name="rouplex-deployment-service-provider-jersey:war exploded">
+      <artifact name="rouplex-deployment-webapp:war exploded">
         <settings>
-          <option name="CONTEXT_PATH" value="/rouplex-deployment-service-provider-jersey" />
+          <option name="CONTEXT_PATH" value="/" />
         </settings>
       </artifact>
     </deployment>
@@ -68,7 +68,7 @@
     </ConfigurationWrapper>
     <method>
       <option name="BuildArtifacts" enabled="true">
-        <artifact name="rouplex-deployment-service-provider-jersey:war exploded" />
+        <artifact name="rouplex-deployment-webapp:war exploded" />
       </option>
     </method>
   </configuration>

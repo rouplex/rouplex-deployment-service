@@ -72,21 +72,22 @@ public class DeploymentAgent implements Closeable {
                 while (!executorService.isShutdown()) {
                     long timeStart = System.currentTimeMillis();
 
-                    UpdateHostStateRequest request = new UpdateHostStateRequest();
-                    request.setDeploymentState(deploymentState.get());
-
-                    UpdateHostStateResponse response = jaxrsClient
-                        .target(configuration.get(ConfigurationKey.DeploymentManagementUrlPattern))
-                        .path("/hosts/" + EC2MetadataUtils.getInstanceId())
-                        .property(JERSEY_CLIENT_CONNECT_TIMEOUT, 2000)
-                        .property(JERSEY_CLIENT_READ_TIMEOUT, 10000)
-                        .request(MediaType.APPLICATION_JSON)
-                        .put(Entity.entity(request, MediaType.APPLICATION_JSON), UpdateHostStateResponse.class);
-
                     try {
+                        logger.fine("Reporting state and update leaseEnd");
+                        UpdateHostStateRequest request = new UpdateHostStateRequest();
+                        request.setDeploymentState(deploymentState.get());
+
+                        UpdateHostStateResponse response = jaxrsClient
+                            .target(configuration.get(ConfigurationKey.DeploymentManagementUrlPattern))
+                            .path("/hosts/" + EC2MetadataUtils.getInstanceId())
+                            .request(MediaType.APPLICATION_JSON)
+                            .put(Entity.entity(request, MediaType.APPLICATION_JSON), UpdateHostStateResponse.class);
+
                         leaseEnd = TimeUtils.convertIsoInstantToMillis(response.getLeaseExpirationDateTime());
+                        logger.info(String.format("Reported state and updated leaseEnd [%s]", leaseEnd));
                     } catch (Exception e) {
-                        // keep the current leaseEnd
+                        logger.warning(String.format("Failed to report state and update leaseEnd. Cause: %s: %s",
+                            e.getClass(), e.getMessage()));
                     }
 
                     // terminate self if beyond the lease
@@ -106,13 +107,13 @@ public class DeploymentAgent implements Closeable {
                             amazonEC2Client.terminateInstances(new TerminateInstancesRequest()
                                 .withInstanceIds(EC2MetadataUtils.getInstanceId()));
                         } catch (RuntimeException re) {
-                            logger.severe(String.format(
-                                "Could not terminate self. Cause: %s: %s", re.getClass(), re.getMessage()));
+                            logger.severe(String.format("Could not terminate self. Cause: %s: %s",
+                                re.getClass(), re.getMessage()));
                         }
                     }
 
                     // once a minute lease updates are more than enough
-                    long waitMillis = timeStart + 60 * 1000 - System.currentTimeMillis();
+                    long waitMillis = timeStart + 60_000 - System.currentTimeMillis();
                     if (waitMillis > 0) {
                         synchronized (executorService) {
                             try {
@@ -142,7 +143,7 @@ public class DeploymentAgent implements Closeable {
         }
     }
 
-    private static Client createJaxRsClient() throws IOException {
+    private Client createJaxRsClient() throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         mapper.enable(SerializationFeature.INDENT_OUTPUT);
         mapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
@@ -150,11 +151,12 @@ public class DeploymentAgent implements Closeable {
         JacksonJaxbJsonProvider provider = new JacksonJaxbJsonProvider();
         provider.setMapper(mapper);
 
-        ClientBuilder clientBuilder = ClientBuilder.newBuilder();
-        clientBuilder.register(provider);
-        clientBuilder.sslContext(SecurityUtils.buildRelaxedSSLContext());
-        clientBuilder.hostnameVerifier((s, sslSession) -> true);
-
-        return clientBuilder.build();
+        return ClientBuilder.newBuilder()
+            .property(JERSEY_CLIENT_CONNECT_TIMEOUT, 2000)
+            .property(JERSEY_CLIENT_READ_TIMEOUT, 2000)
+            .register(provider)
+            .sslContext(SecurityUtils.buildRelaxedSSLContext())
+            .hostnameVerifier((s, sslSession) -> true)
+            .build();
     }
 }

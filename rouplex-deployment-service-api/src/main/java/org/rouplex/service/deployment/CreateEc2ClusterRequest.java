@@ -1,7 +1,7 @@
 package org.rouplex.service.deployment;
 
+import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * @author Andi Mullaraj (andimullaraj at gmail.com)
@@ -16,7 +16,7 @@ public class CreateEc2ClusterRequest {
     private String subnetId; // optional
     private String iamRole; // optional
     private Map<String, String> tags; // optional
-    private Set<String> securityGroupIds;
+    private Collection<String> securityGroupIds;
     private String keyName; // optional
 
     private DeploymentConfiguration deploymentConfiguration;
@@ -93,11 +93,11 @@ public class CreateEc2ClusterRequest {
         this.tags = tags;
     }
 
-    public Set<String> getSecurityGroupIds() {
+    public Collection<String> getSecurityGroupIds() {
         return securityGroupIds;
     }
 
-    public void setSecurityGroupIds(Set<String> securityGroupIds) {
+    public void setSecurityGroupIds(Collection<String> securityGroupIds) {
         this.securityGroupIds = securityGroupIds;
     }
 

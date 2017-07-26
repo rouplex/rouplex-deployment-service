@@ -1,6 +1,7 @@
 package org.rouplex.service;
 
 import org.rouplex.platform.jersey.RouplexJerseyApplication;
+import org.rouplex.service.deployment.DeploymentManagementResource;
 import org.rouplex.service.deployment.DeploymentResource;
 import org.rouplex.service.deployment.DeploymentServiceProvider;
 
@@ -29,13 +30,14 @@ public class DeploymentApplication extends RouplexJerseyApplication {
     @Override
     protected void postConstruct() {
         bindRouplexResource(DeploymentResource.class, true);
+        bindRouplexResource(DeploymentManagementResource.class, true);
 
         try {
             // instantiate early
             DeploymentServiceProvider.get();
         } catch (Exception e) {
             String errorMessage = String.format("Could not instantiate services. Cause: %s: %s",
-                    e.getClass().getSimpleName(), e.getMessage());
+                    e.getClass(), e.getMessage());
 
             logger.severe(errorMessage);
             getSwaggerBeanConfig().setDescription(errorMessage);

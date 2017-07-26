@@ -15,7 +15,7 @@
     <packaging>jar</packaging>
 
     <dependencies>
-        <!-- Import artifacts defined in the main deployment service api -->
+        <!-- Use some artifacts defined in the main deployment service api -->
         <dependency>
             <groupId>org.rouplex</groupId>
             <artifactId>rouplex-deployment-service-api</artifactId>

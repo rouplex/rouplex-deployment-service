@@ -11,7 +11,7 @@ import java.util.Map;
  *
  * @author Andi Mullaraj (andimullaraj at gmail.com)
  */
-class Cluster<H extends Host> {
+public class Cluster<H extends Host> {
     private String clusterId;
     private GeoLocation geoLocation;
     private DeploymentConfiguration deploymentConfiguration;

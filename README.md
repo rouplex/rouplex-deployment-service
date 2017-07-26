@@ -1,12 +1,34 @@
 rouplex-deployment-service
 ==========================
 
-This repo provides a jersey web resource as well as web application built using rouplex-platform-jersey and for 
-deploying services in ec2 and other public clouds.
+This repo provides various components such as java libraries, web resources and a web service / application that can 
+be used for host deployment and management in public clouds such as Amazon EC2, Google Cloud, Azure.
+
+The deployment service can deploy clusters of hosts, maintain leases of thereof, replenish the clusters depending on 
+their load indicators (coming soon), or destroy them on command, or if they expire. Various configurations are 
+available on a cluster level, where the deployment service can be taking out or replace hosts that fail reporting 
+their state for example.
 
 # Description #
-This service will can be used to deploy applications in clusters of hosts, be that Ec2 or others (Google Cloud) 
-coming soon. The build artifact is a war that can be deployed in an application container such as tomcat.
+This project is managed using maven and is composed of a few modules which follow the Rouplex model.
+
+1. For each sub-service, there is a module containing the service definition expressed as a java interface and related
+POJOs/DTOs. This module is suffixed by "-api" and includes minimal dependencies (using only jax-rs-annotations) for 
+pain-free dependency management on the client side. The build artifact is a slim jar that will be used by both a client
+and a provider of the service. We try to model our services as REST, in which case we add the appropriate annotations
+for the client/server adapters to take advantage of. One of these modules is rouplex-deployment-service-api.
+
+1. The related implementation is found in a module of same name suffixed with "-provider". This module will produce a
+jar which can be used as a component of a bigger deployment. In our example, rouplex-deployment-service-provider would
+be the corresponding module.
+
+1. The library obtained at (2) is also provided as a web resource ready for inclusion in a web app. This module will
+produce a jar including various jersey dependencies. In our example, rouplex-deployment-service-provider-jersey would
+be the corresponding module.
+
+1. The resource obtained at (3) (normally along others), is then included in a web app. This module will produce a war 
+file ready for deployment in application servers. In our example, rouplex-deployment-webapp would be the corresponding 
+module.
 
 # Versioning #
 We use semantic versioning, in its representation x.y.z, x stands for API update, y for dependencies update, and z for
@@ -27,9 +49,9 @@ will be installed in your local maven repo.
 `mvn test` will execute all the tests and the console output should show success upon finishing.
 
 # Run #
-To run locally and mostly for debugging purposes, type `cd rouplex-deployment-service-provider-jersey; mvn tomcat7:run` on a
-shell window to start the server then `mvn exec:java` on a separate window to start a browser client (pointing at
-http://localhost:8080/rouplex-deployment-service-provider-jersey/webjars/swagger-ui/2.2.5/index.html?url=http://localhost:8080/rouplex-deployment-service-provider-jersey/rouplex/swagger.json)
+To run locally and mostly for debugging purposes, type `cd rouplex-deployment-webapp; mvn tomcat7:run` on a
+shell window to start the server. Then type `mvn exec:java` on a separate window to start a browser client (pointing at
+http://localhost:8080/webjars/swagger-ui/2.2.5/index.html?url=http://localhost:8080/rest/swagger.json)
 Refer to the API section for details on requests and related responses.
 
 # Deploy #
@@ -41,7 +63,7 @@ To deploy and run remotely on an App server you must make sure you follow these 
 `wget http://archive.apache.org/dist/tomcat/tomcat-8/v8.5.12/bin/apache-tomcat-8.5.12.tar.gz; tar -xvf apache-tomcat-8.5.12.tar.gz`
 
 1. A server key and certificate is required to run the test servers. You can create your own or you can copy the
-keystore at rouplex-deployment-service/rouplex-deployment-service-provider/src/test/resources/server-keystore somewhere on your
+keystore at rouplex-deployment-service/rouplex-deployment-webapp/src/test/resources/server-keystore somewhere on your
 host. Let say you copied it on $TOMCAT_HOME/conf/server-keystore. The keystore password is "kotplot" without the quotes.
 
 1. The test servers must be configured to find the geoLocation of the keystore. That can be done by editing
@@ -67,31 +89,9 @@ deployment (or one can opt for a static deployment, equivalent, but out of the s
 <user username="tomcat" password="<password>" roles="manager-gui"/>
 </tomcat-users>
 ```
-1. Deploy the deployment service by uploading it in tomcat via deploy button (context path will be: rouplex-deployment-service-provider-jersey-1.0.0-SNAPSHOT/).
+1. Deploy the deployment service by uploading it in tomcat via deploy button (context path will be: "/" with no quotes).
 
-1. Use the browser to get to url (http://domain.com:8080/rouplex-deployment-service-provider-jersey-1.0.0-SNAPSHOT/webjars/swagger-ui/2.2.5/index.html?url=http://domain.com:8080/rouplex-deployment-service-provider-jersey-1.0-SNAPSHOT/rouplex/swagger.json)
-
-# Configure Host (Optional) #
-
-## Tomcat as an init.d service ##
-1. As root user, copy the file at deployment-service-provider-jersey/config/initd.tomcat.template to your host's /etc/init.d/tomcat
-1. Grant exec permission to /etc/init.d/tomcat
-1. Exec shell command `sudo service tomcat restart` and the tomcat will be running with the new settings, now and on a
-system reboot
-
-The initd.tomcat.template is quite classic for starting tomcat servers, we are only adding a few CATALINA_OPS to set
-appropriate values for the heap memory to be used, as well as provide a configuration value used by JMX listener.
-```
-# Use 80% of the free memory
-free_mem_kb=`free -t | grep Mem | awk '{print $2}'`
-use_mem_mb=$(( free_mem_kb * 4 / 5 / 1024 ))m
-
-# Ec2 call to get the public ip address, which is needed to expose the jmx ip/port for jconsole to connect to
-public_ipv4=`curl http://169.254.169.254/latest/meta-data/public-ipv4`
-
-#CATALINA_OPS are the extra options for tomcat to get in
-export CATALINA_OPTS="-Xmx$use_mem_mb -Djava.rmi.server.hostname=$public_ipv4"
-```
+1. Use the browser to get to url (http://domain.com:8080/webjars/swagger-ui/2.2.5/index.html?url=http://domain.com:8080/rest/swagger.json)
 
 # Contribution guidelines #
 

@@ -1,12 +1,12 @@
 package org.rouplex.service.deployment;
 
+import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * @author Andi Mullaraj (andimullaraj at gmail.com)
  */
-class Ec2Cluster extends Cluster<Ec2Host> {
+public class Ec2Cluster extends Cluster<Ec2Host> {
     private String imageId;
     private HostType hostType;
     private String userData;
@@ -14,16 +14,16 @@ class Ec2Cluster extends Cluster<Ec2Host> {
     private String subnetId;
     private String iamRole;
     private Map<String, String> tags;
-    private Set<String> securityGroupIds;
+    private Collection<String> securityGroupIds;
     private String keyName;
 
     public Ec2Cluster() {
     }
 
     // internal creation
-    Ec2Cluster(String clusterId, DeploymentConfiguration deploymentConfiguration, GeoLocation geoLocation, String imageId,
-               HostType hostType, String userData, String networkId, String subnetId, String iamRole,
-               Map<String, String> tags, Set<String> securityGroupIds, String keyName, Map<String, Ec2Host> hosts) {
+    Ec2Cluster(String clusterId, DeploymentConfiguration deploymentConfiguration, GeoLocation geoLocation,
+               String imageId, HostType hostType, String userData, String networkId, String subnetId, String iamRole,
+               Map<String, String> tags, Collection<String> securityGroupIds, String keyName, Map<String, Ec2Host> hosts) {
 
         super(clusterId, geoLocation, deploymentConfiguration, hosts);
 
@@ -94,11 +94,11 @@ class Ec2Cluster extends Cluster<Ec2Host> {
         this.tags = tags;
     }
 
-    public Set<String> getSecurityGroupIds() {
+    public Collection<String> getSecurityGroupIds() {
         return securityGroupIds;
     }
 
-    public void setSecurityGroupIds(Set<String> securityGroupIds) {
+    public void setSecurityGroupIds(Collection<String> securityGroupIds) {
         this.securityGroupIds = securityGroupIds;
     }
 
