@@ -47,6 +47,15 @@ public class DeploymentResource extends ResourceConfig implements DeploymentServ
         DeploymentServiceProvider.get().destroyDeployment(deploymentId);
     }
 
+    @ApiOperation(value = "Describe a (generic) cluster")
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Success"),
+        @ApiResponse(code = 500, message = "Error handling request")})
+    @Override
+    public <H extends Host> Cluster<H> getCluster(String deploymentId, String clusterId) throws Exception {
+        return DeploymentServiceProvider.get().getCluster(deploymentId, clusterId);
+    }
+
     @ApiOperation(value = "Create an ec2 regional cluster")
     @ApiResponses(value = {
         @ApiResponse(code = 200, message = "Success"),
@@ -56,7 +65,7 @@ public class DeploymentResource extends ResourceConfig implements DeploymentServ
         return DeploymentServiceProvider.get().createEc2Cluster(deploymentId, request);
     }
 
-    @ApiOperation(value = "List all deployed ec2 clusters for a (service) deployment")
+    @ApiOperation(value = "List all ec2 clusters for a (service) deployment")
     @ApiResponses(value = {
         @ApiResponse(code = 200, message = "Success"),
         @ApiResponse(code = 500, message = "Error handling request")})
@@ -65,7 +74,7 @@ public class DeploymentResource extends ResourceConfig implements DeploymentServ
         return DeploymentServiceProvider.get().listEc2ClusterIds(deploymentId);
     }
 
-    @ApiOperation(value = "Describe a deployed ec2 cluster")
+    @ApiOperation(value = "Describe an ec2 cluster")
     @ApiResponses(value = {
         @ApiResponse(code = 200, message = "Success"),
         @ApiResponse(code = 500, message = "Error handling request")})
@@ -74,7 +83,7 @@ public class DeploymentResource extends ResourceConfig implements DeploymentServ
         return DeploymentServiceProvider.get().getEc2Cluster(deploymentId, clusterId);
     }
 
-    @ApiOperation(value = "Destroy a deployed ec2 cluster")
+    @ApiOperation(value = "Destroy an ec2 cluster")
     @ApiResponses(value = {
         @ApiResponse(code = 200, message = "Success"),
         @ApiResponse(code = 500, message = "Error handling request")})

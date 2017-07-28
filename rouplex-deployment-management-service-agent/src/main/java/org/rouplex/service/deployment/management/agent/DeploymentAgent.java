@@ -33,7 +33,9 @@ import java.util.logging.Logger;
  */
 public class DeploymentAgent implements Closeable {
     public enum ConfigurationKey {
-        DeploymentManagementUrlPattern
+        DeploymentManagementUrl,
+        DefaultLeaseMillis,
+        ReportingPeriodMillis
     }
 
     private static final Logger logger = Logger.getLogger(DeploymentAgent.class.getSimpleName());
@@ -46,8 +48,15 @@ public class DeploymentAgent implements Closeable {
         synchronized (DeploymentAgent.class) {
             if (deploymentAgent == null) {
                 ConfigurationManager configurationManager = new ConfigurationManager();
-                configurationManager.putConfigurationEntry(ConfigurationKey.DeploymentManagementUrlPattern,
+
+                configurationManager.putConfigurationEntry(ConfigurationKey.DeploymentManagementUrl,
                     "https://www.rouplex-demo.com/rest/deployment/management");
+
+                configurationManager.putConfigurationEntry(
+                    ConfigurationKey.DefaultLeaseMillis, 55 * 60_000 + ""); // 55 minutes
+
+                configurationManager.putConfigurationEntry(
+                    ConfigurationKey.ReportingPeriodMillis, 60_000 + ""); // once a minute
 
                 deploymentAgent = new DeploymentAgent(configurationManager.getConfiguration());
             }
@@ -60,11 +69,11 @@ public class DeploymentAgent implements Closeable {
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private final Client jaxrsClient; // rouplex platform will provide a specific version of this soon
 
-    // just under one hour, which is the unit of pricing for EC2 -- this will be updated repetitively anyway
-    private long leaseEnd = System.currentTimeMillis() + 55 * 60 * 1000;
+    private long leaseEnd;
 
     private DeploymentAgent(Configuration configuration) throws Exception {
         jaxrsClient = createJaxRsClient();
+        leaseEnd = System.currentTimeMillis() + configuration.getAsInteger(ConfigurationKey.DefaultLeaseMillis);
 
         executorService.submit(new Runnable() {
             @Override
@@ -78,7 +87,7 @@ public class DeploymentAgent implements Closeable {
                         request.setDeploymentState(deploymentState.get());
 
                         UpdateHostStateResponse response = jaxrsClient
-                            .target(configuration.get(ConfigurationKey.DeploymentManagementUrlPattern))
+                            .target(configuration.get(ConfigurationKey.DeploymentManagementUrl))
                             .path("/hosts/" + EC2MetadataUtils.getInstanceId())
                             .request(MediaType.APPLICATION_JSON)
                             .put(Entity.entity(request, MediaType.APPLICATION_JSON), UpdateHostStateResponse.class);
@@ -112,8 +121,9 @@ public class DeploymentAgent implements Closeable {
                         }
                     }
 
-                    // once a minute lease updates are more than enough
-                    long waitMillis = timeStart + 60_000 - System.currentTimeMillis();
+                    long waitMillis = timeStart + configuration.getAsInteger(ConfigurationKey.ReportingPeriodMillis)
+                        - System.currentTimeMillis();
+
                     if (waitMillis > 0) {
                         synchronized (executorService) {
                             try {
@@ -152,8 +162,8 @@ public class DeploymentAgent implements Closeable {
         provider.setMapper(mapper);
 
         return ClientBuilder.newBuilder()
-            .property(JERSEY_CLIENT_CONNECT_TIMEOUT, 2000)
-            .property(JERSEY_CLIENT_READ_TIMEOUT, 2000)
+            .property(JERSEY_CLIENT_CONNECT_TIMEOUT, 12000)
+            .property(JERSEY_CLIENT_READ_TIMEOUT, 12000)
             .register(provider)
             .sslContext(SecurityUtils.buildRelaxedSSLContext())
             .hostnameVerifier((s, sslSession) -> true)

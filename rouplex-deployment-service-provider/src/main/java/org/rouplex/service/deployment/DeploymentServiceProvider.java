@@ -7,6 +7,9 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
 import com.amazonaws.services.ec2.model.*;
+import org.rouplex.commons.configuration.Configuration;
+import org.rouplex.commons.configuration.ConfigurationManager;
+import org.rouplex.commons.exceptions.NotFoundException;
 import org.rouplex.commons.utils.TimeUtils;
 import org.rouplex.commons.utils.ValidationUtils;
 import org.rouplex.service.deployment.management.ManagementService;
@@ -28,27 +31,41 @@ import java.util.stream.Collectors;
  * @author Andi Mullaraj (andimullaraj at gmail.com)
  */
 public class DeploymentServiceProvider implements DeploymentService, ManagementService, Closeable {
+    public enum ConfigurationKey {
+        HostShutdownEstimationMillis,
+        MonitoringPeriodMillis,
+    }
+
     private static final Logger logger = Logger.getLogger(DeploymentServiceProvider.class.getSimpleName());
 
     private static DeploymentServiceProvider deploymentService;
-
     public static DeploymentServiceProvider get() throws Exception {
         synchronized (DeploymentServiceProvider.class) {
             if (deploymentService == null) {
-                deploymentService = new DeploymentServiceProvider();
+                ConfigurationManager configurationManager = new ConfigurationManager();
+
+                configurationManager.putConfigurationEntry(
+                    ConfigurationKey.HostShutdownEstimationMillis, 2 * 60_000 + ""); // 2 minutes
+
+                configurationManager.putConfigurationEntry(
+                    ConfigurationKey.MonitoringPeriodMillis, 60_000 + ""); // 1 minute
+
+                deploymentService = new DeploymentServiceProvider(configurationManager.getConfiguration());
             }
 
             return deploymentService;
         }
     }
 
+    private final Configuration configuration;
     private final Map<GeoLocation, AmazonEC2> amazonEc2Clients = new HashMap<>();
     private final ConcurrentMap<String /* deploymentId (serviceName) */, Deployment> deployments = new ConcurrentHashMap<>();
     private final ConcurrentMap<String /* clusterId (reservationId) */, Cluster<? extends Host>> clusters = new ConcurrentHashMap<>();
-    private final ConcurrentMap<String /* hostId (instanceId) */, Host> hosts = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String /* id (instanceId) */, Host> hosts = new ConcurrentHashMap<>();
     private final ExecutorService executorService = Executors.newCachedThreadPool();
 
-    DeploymentServiceProvider() {
+    DeploymentServiceProvider(Configuration configuration) {
+        this.configuration = configuration;
         startMonitoring();
     }
 
@@ -167,9 +184,9 @@ public class DeploymentServiceProvider implements DeploymentService, ManagementS
                 request.getHostType(), request.getUserData(), request.getNetworkId(), request.getSubnetId(),
                 request.getIamRole(), request.getTags(), request.getSecurityGroupIds(), request.getKeyName(), ec2ClusterHosts);
 
-            deployment.getClusterIds().put(clusterId, CloudProvider.AMAZON_AWS);
+            deployment.getClusterIds().add(clusterId);
             clusters.put(clusterId, ec2Cluster);
-            ec2ClusterHosts.values().parallelStream().forEach(h -> hosts.put(h.getHostId(), h));
+            ec2ClusterHosts.values().parallelStream().forEach(h -> hosts.put(h.getId(), h));
 
             logger.info(String.format("Created ec2 cluster [%s] for deployment [%s]", clusterId, deploymentId));
             return new CreateEc2ClusterResponse(clusterId);
@@ -181,68 +198,56 @@ public class DeploymentServiceProvider implements DeploymentService, ManagementS
         Deployment deployment = locateDeployment(deploymentId);
 
         // may throw ConcurrentModificationException, which is fine (and can be retried)
-        return deployment.getClusterIds().entrySet().parallelStream()
-            .filter(e -> e.getValue() == CloudProvider.AMAZON_AWS)
-            .map(Map.Entry::getKey)
+        return deployment.getClusterIds().parallelStream()
+            .filter(cid -> {
+                Cluster cluster = clusters.get(cid);
+                return cluster != null && cluster.getCloudProvider() == CloudProvider.AMAZON_AWS;
+            })
             .collect(Collectors.toSet());
     }
 
     @Override
-    public Ec2Cluster getEc2Cluster(String deploymentId, String clusterId) throws Exception {
+    public <H extends Host> Cluster<H> getCluster(String deploymentId, String clusterId) throws Exception {
         Deployment deployment = locateDeployment(deploymentId);
         ValidationUtils.checkNonNullArg(clusterId, "clusterId");
-        CloudProvider cloudProvider = deployment.getClusterIds().get(clusterId);
 
-        if (cloudProvider == null) {
-            throw new IllegalStateException(String.format(
+        Cluster<H> cluster = (Cluster<H>) clusters.get(clusterId);
+        if (cluster == null) {
+            throw new NotFoundException(String.format("Cluster [%s] not found",clusterId));
+        }
+
+        if (!deployment.getClusterIds().contains(clusterId)) {
+            throw new NotFoundException(String.format(
                 "Deployment [%s] does not contain cluster [%s]", deploymentId, clusterId));
         }
 
-        if (cloudProvider != CloudProvider.AMAZON_AWS) {
-            throw new IllegalArgumentException(String.format(
-                "Cluster [%s] is not an Ec2Cluster", clusterId));
+        return cluster;
+    }
+
+    @Override
+    public Ec2Cluster getEc2Cluster(String deploymentId, String clusterId) throws Exception {
+        Cluster<? extends Host> cluster = getCluster(deploymentId, clusterId);
+        if (cluster.getCloudProvider() != CloudProvider.AMAZON_AWS) {
+            throw new IllegalStateException(String.format("Cluster [%s] is not ec2", clusterId));
         }
 
-        Ec2Cluster ec2Cluster = (Ec2Cluster) clusters.get(clusterId);
-        Map<String, Ec2Host> ec2ClusterHosts = ec2Cluster.getHosts();
-
-        for (Reservation reservation : getAmazonEc2Client(ec2Cluster.getGeoLocation()).describeInstances(
-            new DescribeInstancesRequest().withInstanceIds(ec2ClusterHosts.keySet())).getReservations()) {
-
-            for (Instance instance : reservation.getInstances()) {
-                ec2ClusterHosts.get(instance.getInstanceId()).setPublicIpAddress(instance.getPublicIpAddress());
-            }
-        }
-
-        return ec2Cluster;
+        return (Ec2Cluster) cluster;
     }
 
     @Override
     public void destroyEc2Cluster(String deploymentId, String clusterId) throws Exception {
         Deployment deployment = locateDeployment(deploymentId);
-        ValidationUtils.checkNonNullArg(clusterId, "clusterId");
-        CloudProvider cloudProvider = deployment.getClusterIds().get(clusterId);
-
-        if (cloudProvider == null) {
-            throw new IllegalStateException(String.format(
-                "Deployment [%s] does not contain cluster [%s]", deploymentId, clusterId));
-        }
-
-        if (cloudProvider != CloudProvider.AMAZON_AWS) {
-            throw new IllegalArgumentException(String.format(
-                "Cluster [%s] is not an Ec2Cluster", clusterId));
-        }
-
-        Cluster cluster = clusters.get(clusterId);
+        Ec2Cluster ec2Cluster = getEc2Cluster(deploymentId, clusterId);
 
         logger.fine(String.format("Destroying ec2 cluster [%s] in deployment [%s]", clusterId, deploymentId));
 
-        destroyCluster(cluster);
+        destroyCluster(ec2Cluster);
 
         // deployment/cluster instances are updated atomically
-        // in this case the lock protects the Map instance inside the deployment (no ConcurrentMap to keep DTO simple)
+        // in this case the lock protects the Map instance inside the deployment
+        // (no ConcurrentMap to keep DTO simple)
         synchronized (deployment) {
-            deployment.getClusterIds().remove(cluster.getClusterId());
+            deployment.getClusterIds().remove(ec2Cluster.getId());
         }
 
         logger.info(String.format("Destroyed ec2 cluster [%s] in deployment [%s]", clusterId, deploymentId));
@@ -290,7 +295,6 @@ public class DeploymentServiceProvider implements DeploymentService, ManagementS
 
     protected void startMonitoring() {
         executorService.submit((Runnable) () -> {
-
             while (!executorService.isShutdown()) {
                 // we note timeStart since the loop may take time to execute
                 long timeStart = System.currentTimeMillis();
@@ -302,7 +306,9 @@ public class DeploymentServiceProvider implements DeploymentService, ManagementS
                 }
 
                 // update leases once a minute (or less often occasionally)
-                long waitMillis = timeStart + 60 * 1000 - System.currentTimeMillis();
+                long waitMillis = timeStart + configuration.getAsInteger(ConfigurationKey.MonitoringPeriodMillis)
+                    - System.currentTimeMillis();
+
                 if (waitMillis > 0) {
                     try {
                         synchronized (executorService) {
@@ -321,7 +327,7 @@ public class DeploymentServiceProvider implements DeploymentService, ManagementS
 
         Deployment deployment = deployments.get(deploymentId);
         if (deployment == null) {
-            throw new Exception(String.format("Deployment [%s] not found", deploymentId));
+            throw new NotFoundException(String.format("Deployment [%s] not found", deploymentId));
         }
 
         return deployment;
@@ -335,7 +341,7 @@ public class DeploymentServiceProvider implements DeploymentService, ManagementS
                 AmazonEC2ClientBuilder amazonEC2ClientBuilder = AmazonEC2ClientBuilder.standard()
                     .withRegion(Regions.fromName(geoLocation.toString()));
 
-                // todo comment out this block -- used very rarely when testing from local host
+                // this block can be omitted since it used only to debug from local host
                 String awsAccessKey = System.getenv("awsAccessKey");
                 String awsSecretKey = System.getenv("awsSecretKey");
                 if (awsAccessKey != null && awsSecretKey != null) {
@@ -368,7 +374,7 @@ public class DeploymentServiceProvider implements DeploymentService, ManagementS
     }
 
     protected void monitorDeployment(Deployment deployment) {
-        logger.fine(String.format("Monitoring deployment [%s]", deployment.getDeploymentId()));
+        logger.fine(String.format("Monitoring deployment [%s]", deployment.getId()));
 
         String expiration = deployment.getDeploymentConfiguration().getLeaseExpirationDateTime();
         if (expiration != null && getTimeMillis(expiration) < System.currentTimeMillis()) {
@@ -376,32 +382,34 @@ public class DeploymentServiceProvider implements DeploymentService, ManagementS
                 destroyDeployment(deployment);
             } catch (Exception e) {
                 logger.info(String.format("Failed destroying deployment [%s]. Cause: [%s: %s]",
-                    deployment.getDeploymentId(), e.getClass().getSimpleName(), e.getMessage()));
+                    deployment.getId(), e.getClass().getSimpleName(), e.getMessage()));
             }
 
             return;
         }
 
+        deployment.getClusterIds().parallelStream().forEach(cid -> monitorCluster(clusters.get(cid)));
+
         // Splitting the following statements to avoid ConcurrentModification
-        Set<String> expiredClusterIds = deployment.getClusterIds().keySet().parallelStream()
-            .filter(cid -> monitorCluster(clusters.get(cid)))
+        Set<String> finishingClusterIds = deployment.getClusterIds().parallelStream()
+            .filter(cid -> clusters.get(cid) == null)
             .collect(Collectors.toSet());
 
         synchronized (deployment) {
-            expiredClusterIds.stream().forEach(cid -> deployment.getClusterIds().remove(cid));
+            finishingClusterIds.stream().forEach(cid -> deployment.getClusterIds().remove(cid));
         }
     }
 
     protected void destroyDeployment(Deployment deployment) throws Exception {
-        logger.fine(String.format("Destroying deployment [%s]", deployment.getDeploymentId()));
+        logger.fine(String.format("Destroying deployment [%s]", deployment.getId()));
 
         synchronized (deployment) {
-            String deploymentId = deployment.getDeploymentId();
+            String deploymentId = deployment.getId();
 
             try {
-                deployment.getClusterIds().entrySet().parallelStream().forEach(entry -> {
+                deployment.getClusterIds().parallelStream().forEach(cid -> {
                     try {
-                        destroyCluster(clusters.get(entry.getKey()));
+                        destroyCluster(clusters.get(cid));
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
@@ -414,8 +422,8 @@ public class DeploymentServiceProvider implements DeploymentService, ManagementS
         }
     }
 
-    protected boolean monitorCluster(Cluster<? extends Host> cluster) {
-        logger.fine(String.format("Monitoring cluster [%s]", cluster.getClusterId()));
+    protected void monitorCluster(Cluster<? extends Host> cluster) {
+        logger.fine(String.format("Monitoring cluster [%s]", cluster.getId()));
 
         String expiration = cluster.getDeploymentConfiguration().getLeaseExpirationDateTime();
         if (expiration != null && getTimeMillis(expiration) < System.currentTimeMillis()) {
@@ -423,81 +431,103 @@ public class DeploymentServiceProvider implements DeploymentService, ManagementS
                 destroyCluster(cluster);
             } catch (Exception e) {
                 logger.info(String.format("Failed destroying cluster [%s]. Cause: [%s: %s]",
-                    cluster.getClusterId(), e.getClass().getSimpleName(), e.getMessage()));
+                    cluster.getId(), e.getClass().getSimpleName(), e.getMessage()));
             }
 
-            return true;
+            return;
         }
 
+        cluster.getHosts().values().parallelStream().forEach(h -> monitorHostInCluster(h, cluster));
+
         // Splitting the following statements to avoid ConcurrentModification
-        Set<? extends Host> expiredHosts = cluster.getHosts().values().parallelStream()
-            .filter(h -> monitorHostInCluster(h, cluster))
+        Set<? extends Host> destroyingHosts = cluster.getHosts().values().parallelStream()
+            .filter(h -> h.getFinishingTimestamp() != 0)
             .collect(Collectors.toSet());
 
         synchronized (cluster) {
-            expiredHosts.stream().forEach(h -> cluster.getHosts().remove(h.getHostId()));
+            destroyingHosts.stream().forEach(h -> cluster.getHosts().remove(h.getId()));
         }
-        return false;
     }
 
     protected void destroyCluster(Cluster<? extends Host> cluster) throws Exception {
         synchronized (cluster) {
+            cluster.setFinishingTimestamp(System.currentTimeMillis());
             Set<String> hostIds = cluster.getHosts().keySet();
 
-            if (cluster instanceof Ec2Cluster) {
-                // all instances are in same region
-                AmazonEC2 amazonEc2Client = getAmazonEc2Client(cluster.getGeoLocation());
+            switch (cluster.getCloudProvider()) {
+                case AMAZON_AWS:
+                    // all instances are in same region
+                    AmazonEC2 amazonEc2Client = getAmazonEc2Client(cluster.getGeoLocation());
 
-                amazonEc2Client.createTags(new CreateTagsRequest().withResources(hostIds)
-                    .withTags(new Tag().withKey("State").withValue("Terminated by deployment service")));
+                    amazonEc2Client.createTags(new CreateTagsRequest().withResources(hostIds)
+                        .withTags(new Tag().withKey("State").withValue("Terminated by deployment service")));
 
-                amazonEc2Client.terminateInstances(new TerminateInstancesRequest().withInstanceIds(hostIds));
+                    amazonEc2Client.terminateInstances(new TerminateInstancesRequest().withInstanceIds(hostIds));
+                    break;
+                case GOOGLE_GC:
+                    // todo
+                    break;
             }
-            // else destroy gc cluster etc
 
             hostIds.parallelStream().forEach(hosts::remove);
-            clusters.remove(cluster.getClusterId());
+            clusters.remove(cluster.getId());
         }
     }
 
-    protected boolean monitorHostInCluster(Host host, Cluster cluster) {
-        logger.fine(String.format("Monitoring host [%s]", host.getHostId()));
-
+    protected void monitorHostInCluster(Host host, Cluster cluster) {
+        logger.fine(String.format("Monitoring host [%s]", host.getId()));
         long lostHostIntervalMillis = cluster.getDeploymentConfiguration().getLostHostIntervalMillis();
-        if (lostHostIntervalMillis == 0) {
-            return false;
+
+        if (lostHostIntervalMillis != 0) {
+            long lastHostUpdate = Math.max(host.getStartingTimestamp(), host.getLastDeploymentStateUpdateTimestamp());
+
+            if (System.currentTimeMillis() > lastHostUpdate + lostHostIntervalMillis) {
+                // we observed at least lostHostIntervalMillis millis of silence,
+                // but lets use up the 1 hour instance slot before terminating it
+                long now = System.currentTimeMillis();
+                long slotEndMillis = now + ((now - host.getStartingTimestamp()) / 3600 + 1) * 3600;
+                long destroyTimestamp = slotEndMillis - configuration.getAsInteger(ConfigurationKey.HostShutdownEstimationMillis);
+
+                if (System.currentTimeMillis() > destroyTimestamp) {
+                    destroyHostInCluster(host, cluster);
+                    return;
+                }
+            }
         }
 
-        if (System.currentTimeMillis() <= host.getLastDeploymentStateUpdateTimestamp() + lostHostIntervalMillis) {
-            return false;
-        }
+        if (host.getPublicIpAddress() == null) {
+            switch (cluster.getCloudProvider()) {
+                case AMAZON_AWS:
+                    for (Reservation reservation : getAmazonEc2Client(cluster.getGeoLocation()).describeInstances(
+                        new DescribeInstancesRequest().withInstanceIds(host.getId())).getReservations()) {
 
-        // we observed at least lostHostIntervalMillis millis of silence,
-        // but lets use up the 1 hour instance slot before terminating it
-        long now = System.currentTimeMillis();
-        long slotEndMillis = now + ((now - host.getStartTimestamp()) / 3600 + 1) * 3600;
-        long twoMinsBeforeSlotEndMillis = slotEndMillis - 2 * 60 * 1000;
-        if (System.currentTimeMillis() <= twoMinsBeforeSlotEndMillis) {
-            return false;
+                        for (Instance instance : reservation.getInstances()) {
+                            host.setPublicIpAddress(instance.getPublicIpAddress());
+                        }
+                    }
+                    break;
+                case GOOGLE_GC:
+                    // todo
+                    break;
+            }
         }
-
-        destroyHostInCluster(host, cluster);
-        return true;
     }
 
     protected void destroyHostInCluster(Host host, Cluster cluster) {
-        logger.fine(String.format("Terminating host [%s] in cluster [%s]", host.getHostId(), cluster.getClusterId()));
+        logger.fine(String.format("Terminating host [%s] in cluster [%s]", host.getId(), cluster.getId()));
+
+        host.setFinishingTimestamp(System.currentTimeMillis());
 
         if (cluster instanceof Ec2Cluster) {
             AmazonEC2 amazonEc2Client = getAmazonEc2Client(cluster.getGeoLocation());
-            amazonEc2Client.createTags(new CreateTagsRequest().withResources(host.getHostId())
+            amazonEc2Client.createTags(new CreateTagsRequest().withResources(host.getId())
                 .withTags(new Tag().withKey("State").withValue("Terminated by deployment service")));
 
-            amazonEc2Client.terminateInstances(new TerminateInstancesRequest().withInstanceIds(host.getHostId()));
+            amazonEc2Client.terminateInstances(new TerminateInstancesRequest().withInstanceIds(host.getId()));
         }
         // else handle gc cluster ...
 
-        hosts.remove(host.getHostId());
-        logger.info(String.format("Terminated host [%s] in cluster [%s]", host.getHostId(), cluster.getClusterId()));
+        hosts.remove(host.getId());
+        logger.info(String.format("Terminated host [%s] in cluster [%s]", host.getId(), cluster.getId()));
     }
 }

@@ -8,7 +8,7 @@ import java.util.Set;
  */
 @Path("/deployment")
 public interface DeploymentService {
-    @POST
+    @PUT
     @Path("/deployments/{deploymentId}")
     void createDeployment(@PathParam("deploymentId") String deploymentId,
                           CreateDeploymentRequest request) throws Exception;
@@ -24,6 +24,11 @@ public interface DeploymentService {
     @DELETE
     @Path("/deployments/{deploymentId}")
     void destroyDeployment(@PathParam("deploymentId") String deploymentId) throws Exception;
+
+    @GET // experimental
+    @Path("/deployments/{deploymentId}/clusters/{clusterId}")
+    <H extends Host> Cluster<H> getCluster(@PathParam("deploymentId") String deploymentId,
+                                       @PathParam("clusterId") String clusterId) throws Exception;
 
     @POST
     @Path("/deployments/{deploymentId}/ec2/clusters")

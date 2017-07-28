@@ -9,32 +9,33 @@ import java.util.concurrent.atomic.AtomicReference;
  * @author Andi Mullaraj (andimullaraj at gmail.com)
  */
 public class Host {
-    protected String hostId;
+    protected String id;
     protected String clusterId;
-    protected long startTimestamp;
+    protected long startingTimestamp;
     protected String privateIpAddress;
 
     // Following fields get updated by various threads, hence using Atomic's properties for memory barriers
     protected AtomicReference<String> publicIpAddress = new AtomicReference<>();
-    protected AtomicLong lastDeploymentStateUpdateTimestamp = new AtomicLong(System.currentTimeMillis());
+    protected AtomicLong finishingTimestamp = new AtomicLong();
+    protected AtomicLong lastDeploymentStateUpdateTimestamp = new AtomicLong();
     protected AtomicReference<DeploymentState> deploymentState = new AtomicReference<>();
 
     public Host() {
     }
 
-    Host(String hostId, String clusterId, long startTimestamp, String privateIpAddress) {
-        this.hostId = hostId;
+    Host(String id, String clusterId, long startingTimestamp, String privateIpAddress) {
+        this.id = id;
         this.clusterId = clusterId;
-        this.startTimestamp = startTimestamp;
+        this.startingTimestamp = startingTimestamp;
         this.privateIpAddress = privateIpAddress;
     }
 
-    public String getHostId() {
-        return hostId;
+    public String getId() {
+        return id;
     }
 
-    public void setHostId(String hostId) {
-        this.hostId = hostId;
+    public void setId(String id) {
+        this.id = id;
     }
 
     public String getClusterId() {
@@ -45,12 +46,20 @@ public class Host {
         this.clusterId = clusterId;
     }
 
-    public long getStartTimestamp() {
-        return startTimestamp;
+    public long getStartingTimestamp() {
+        return startingTimestamp;
     }
 
-    public void setStartTimestamp(long startTimestamp) {
-        this.startTimestamp = startTimestamp;
+    public void setStartingTimestamp(long startingTimestamp) {
+        this.startingTimestamp = startingTimestamp;
+    }
+
+    public long getFinishingTimestamp() {
+        return finishingTimestamp.get();
+    }
+
+    public void setFinishingTimestamp(long finishingTimestamp) {
+        this.finishingTimestamp.set(finishingTimestamp);
     }
 
     public long getLastDeploymentStateUpdateTimestamp() {
@@ -84,4 +93,6 @@ public class Host {
     public void setPublicIpAddress(String publicIpAddress) {
         this.publicIpAddress.set(publicIpAddress);
     }
+
+
 }

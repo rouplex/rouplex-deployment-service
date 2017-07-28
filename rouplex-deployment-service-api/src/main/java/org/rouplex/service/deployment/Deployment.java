@@ -1,32 +1,32 @@
 package org.rouplex.service.deployment;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * @author Andi Mullaraj (andimullaraj at gmail.com)
  */
 public class Deployment {
-    private String deploymentId;
+    private String id;
     private DeploymentConfiguration deploymentConfiguration;
 
     // Following fields get updated by various threads synchronized using this instance
-    private final Map<String, CloudProvider> clusterIds = new HashMap<>();
+    private final Set<String> clusterIds = new HashSet<>();
 
     public Deployment() {
     }
 
-    Deployment(String deploymentId, DeploymentConfiguration deploymentConfiguration) {
-        this.deploymentId = deploymentId;
+    Deployment(String id, DeploymentConfiguration deploymentConfiguration) {
+        this.id = id;
         this.deploymentConfiguration = deploymentConfiguration;
     }
 
-    public String getDeploymentId() {
-        return deploymentId;
+    public String getId() {
+        return id;
     }
 
-    public void setDeploymentId(String deploymentId) {
-        this.deploymentId = deploymentId;
+    public void setId(String id) {
+        this.id = id;
     }
 
     public DeploymentConfiguration getDeploymentConfiguration() {
@@ -37,7 +37,7 @@ public class Deployment {
         this.deploymentConfiguration = deploymentConfiguration;
     }
 
-    public Map<String, CloudProvider> getClusterIds() {
+    public Set<String> getClusterIds() {
         return clusterIds;
     }
 }

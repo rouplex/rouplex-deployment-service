@@ -25,7 +25,7 @@ public class Ec2Cluster extends Cluster<Ec2Host> {
                String imageId, HostType hostType, String userData, String networkId, String subnetId, String iamRole,
                Map<String, String> tags, Collection<String> securityGroupIds, String keyName, Map<String, Ec2Host> hosts) {
 
-        super(clusterId, geoLocation, deploymentConfiguration, hosts);
+        super(clusterId, CloudProvider.AMAZON_AWS, geoLocation, deploymentConfiguration, hosts);
 
         this.imageId = imageId;
         this.hostType = hostType;
