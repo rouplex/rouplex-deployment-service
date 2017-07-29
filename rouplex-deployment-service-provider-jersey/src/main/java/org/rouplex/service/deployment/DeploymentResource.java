@@ -52,7 +52,7 @@ public class DeploymentResource extends ResourceConfig implements DeploymentServ
         @ApiResponse(code = 200, message = "Success"),
         @ApiResponse(code = 500, message = "Error handling request")})
     @Override
-    public <H extends Host> Cluster<H> getCluster(String deploymentId, String clusterId) throws Exception {
+    public Cluster<? extends Host> getCluster(String deploymentId, String clusterId) throws Exception {
         return DeploymentServiceProvider.get().getCluster(deploymentId, clusterId);
     }
 

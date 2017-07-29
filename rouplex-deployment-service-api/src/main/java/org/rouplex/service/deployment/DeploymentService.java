@@ -27,7 +27,7 @@ public interface DeploymentService {
 
     @GET // experimental
     @Path("/deployments/{deploymentId}/clusters/{clusterId}")
-    <H extends Host> Cluster<H> getCluster(@PathParam("deploymentId") String deploymentId,
+    Cluster<? extends Host> getCluster(@PathParam("deploymentId") String deploymentId,
                                        @PathParam("clusterId") String clusterId) throws Exception;
 
     @POST

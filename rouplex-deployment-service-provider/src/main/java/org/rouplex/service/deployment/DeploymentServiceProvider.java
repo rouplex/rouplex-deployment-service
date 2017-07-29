@@ -207,11 +207,11 @@ public class DeploymentServiceProvider implements DeploymentService, ManagementS
     }
 
     @Override
-    public <H extends Host> Cluster<H> getCluster(String deploymentId, String clusterId) throws Exception {
+    public Cluster<? extends Host> getCluster(String deploymentId, String clusterId) throws Exception {
         Deployment deployment = locateDeployment(deploymentId);
         ValidationUtils.checkNonNullArg(clusterId, "clusterId");
 
-        Cluster<H> cluster = (Cluster<H>) clusters.get(clusterId);
+        Cluster<? extends Host> cluster = clusters.get(clusterId);
         if (cluster == null) {
             throw new NotFoundException(String.format("Cluster [%s] not found",clusterId));
         }

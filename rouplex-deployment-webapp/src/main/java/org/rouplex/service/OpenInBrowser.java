@@ -11,7 +11,6 @@ import java.net.URI;
 public class OpenInBrowser {
     public static void main(String[] args) throws Exception {
         Desktop.getDesktop().browse(URI.create(
-            "http://localhost:8080/rouplex-deployment-service-provider-jersey/webjars/swagger-ui/2.2.5/index.html?" +
-                "url=http://localhost:8080/rouplex-deployment-service-provider-jersey/rest/swagger.json"));
+            "http://localhost:8080/webjars/swagger-ui/2.2.5/index.html?url=http://localhost:8080/rest/swagger.json"));
     }
 }
