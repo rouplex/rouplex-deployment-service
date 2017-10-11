@@ -45,7 +45,7 @@ public class DeploymentServiceProvider implements DeploymentService, ManagementS
                 ConfigurationManager configurationManager = new ConfigurationManager();
 
                 configurationManager.putConfigurationEntry(
-                    ConfigurationKey.HostShutdownEstimationMillis, 2 * 60_000 + ""); // 2 minutes
+                    ConfigurationKey.HostShutdownEstimationMillis, 5 * 60_000 + ""); // 5 minutes
 
                 configurationManager.putConfigurationEntry(
                     ConfigurationKey.MonitoringPeriodMillis, 60_000 + ""); // 1 minute
@@ -67,6 +67,8 @@ public class DeploymentServiceProvider implements DeploymentService, ManagementS
     DeploymentServiceProvider(Configuration configuration) {
         this.configuration = configuration;
         startMonitoring();
+
+        logger.info("Created DeploymentServiceProvider");
     }
 
     @Override
@@ -151,6 +153,8 @@ public class DeploymentServiceProvider implements DeploymentService, ManagementS
             RunInstancesRequest runInstancesRequest = new RunInstancesRequest()
                 .withImageId(request.getImageId())
                 .withInstanceType(InstanceType.fromValue(request.getHostType().toString()))
+                .withPlacement(new Placement().withGroupName(request.getPlacementGroup()))
+                .withEbsOptimized(request.getPlacementGroup() != null)
                 .withUserData(request.getUserData())
                 .withMinCount(request.getHostCount())
                 .withMaxCount(request.getHostCount())
@@ -172,8 +176,16 @@ public class DeploymentServiceProvider implements DeploymentService, ManagementS
                     .withResourceType(ResourceType.Instance).withTags(tags));
             }
 
-            Reservation reservation = getAmazonEc2Client(request.getRegion())
-                .runInstances(runInstancesRequest).getReservation();
+            Reservation reservation;
+            try {
+                reservation = getAmazonEc2Client(request.getRegion())
+                    .runInstances(runInstancesRequest).getReservation();
+            } catch (Exception e) {
+                // retry without ebs optimized (rather than keep tabs from aws docs)
+                reservation = getAmazonEc2Client(request.getRegion())
+                    .runInstances(runInstancesRequest.withEbsOptimized(false)).getReservation();
+            }
+
             String clusterId = reservation.getReservationId();
 
             Map<String, Ec2Host> ec2ClusterHosts = reservation.getInstances().parallelStream()
@@ -259,7 +271,7 @@ public class DeploymentServiceProvider implements DeploymentService, ManagementS
 
         Host host = hosts.get(hostId);
         if (host == null) {
-            throw new IllegalStateException(String.format("Host [%s] not found", hostId));
+            throw new NotFoundException(String.format("Host [%s] not found", hostId));
         }
 
         Cluster cluster = clusters.get(host.getClusterId());
@@ -268,8 +280,7 @@ public class DeploymentServiceProvider implements DeploymentService, ManagementS
                 "Cluster [%s] for host [%s] not found", host.getClusterId(), hostId));
         }
 
-        logger.fine(String.format("Updating host [%s] in cluster [%s] with state [%s]",
-            hostId, host.getClusterId(), request.getDeploymentState()));
+        logger.fine(String.format("Updating state of host [%s] in cluster [%s]", hostId, host.getClusterId()));
 
         host.setLastDeploymentStateUpdateTimestamp(System.currentTimeMillis());
         host.setDeploymentState(request.getDeploymentState());
@@ -277,8 +288,8 @@ public class DeploymentServiceProvider implements DeploymentService, ManagementS
         UpdateHostStateResponse response = new UpdateHostStateResponse();
         response.setLeaseExpirationDateTime(cluster.getDeploymentConfiguration().getLeaseExpirationDateTime());
 
-        logger.info(String.format("Updated host [%s] in cluster [%s] with state [%s]. New lease expiration is [%s]",
-            hostId, host.getClusterId(), request.getDeploymentState(), response.getLeaseExpirationDateTime()));
+        logger.info(String.format("Updated state of host [%s] in cluster [%s]. New lease expiration is [%s]",
+            hostId, host.getClusterId(), response.getLeaseExpirationDateTime()));
 
         return response;
     }

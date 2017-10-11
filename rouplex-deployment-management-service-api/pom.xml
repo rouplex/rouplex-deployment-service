@@ -7,11 +7,11 @@
     <parent>
         <groupId>org.rouplex</groupId>
         <artifactId>rouplex-deployment-service-parent</artifactId>
-        <version>1.0.0</version>
+        <version>1.0.1</version>
     </parent>
 
     <artifactId>rouplex-deployment-management-service-api</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <packaging>jar</packaging>
 
     <dependencies>
@@ -19,6 +19,7 @@
         <dependency>
             <groupId>org.rouplex</groupId>
             <artifactId>rouplex-deployment-service-api</artifactId>
+            <version>1.0.1</version>
         </dependency>
 
         <!-- Jax-rs imported for its annotations -->

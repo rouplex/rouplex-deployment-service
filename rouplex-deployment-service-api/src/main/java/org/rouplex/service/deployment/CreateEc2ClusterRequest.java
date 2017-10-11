@@ -11,6 +11,7 @@ public class CreateEc2ClusterRequest {
     protected HostType hostType;
     protected int hostCount;
     private String imageId;
+    private String placementGroup;
     private String userData; // optional
     private String networkId;
     private String subnetId; // optional
@@ -51,6 +52,14 @@ public class CreateEc2ClusterRequest {
 
     public void setImageId(String imageId) {
         this.imageId = imageId;
+    }
+
+    public String getPlacementGroup() {
+        return placementGroup;
+    }
+
+    public void setPlacementGroup(String placementGroup) {
+        this.placementGroup = placementGroup;
     }
 
     public String getUserData() {

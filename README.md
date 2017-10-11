@@ -11,7 +11,7 @@ their state for example.
 
 This first implementation provides the basic functionality and is not high availability. Requests are fulfilled
 by a single running instance, and all could be lost if that instance goes down for some reason. The upcoming 
-implementation is addressing this as well as high availablity via the use of (SWF) workflows.
+implementation is addressing this as well as high availability via the use of (SWF) workflows.
 
 # Description #
 This project is managed using maven and is composed of a few modules which follow the Rouplex model.

@@ -82,7 +82,7 @@ public class DeploymentAgent implements Closeable {
                     long timeStart = System.currentTimeMillis();
 
                     try {
-                        logger.fine("Reporting state and update leaseEnd");
+                        logger.fine("Reporting deployment state and update leaseEnd");
                         UpdateHostStateRequest request = new UpdateHostStateRequest();
                         request.setDeploymentState(deploymentState.get());
 
@@ -93,9 +93,9 @@ public class DeploymentAgent implements Closeable {
                             .put(Entity.entity(request, MediaType.APPLICATION_JSON), UpdateHostStateResponse.class);
 
                         leaseEnd = TimeUtils.convertIsoInstantToMillis(response.getLeaseExpirationDateTime());
-                        logger.info(String.format("Reported state and updated leaseEnd [%s]", leaseEnd));
+                        logger.info(String.format("Reported deployment state and updated leaseEnd [%s]", leaseEnd));
                     } catch (Exception e) {
-                        logger.warning(String.format("Failed to report state and update leaseEnd. Cause: %s: %s",
+                        logger.warning(String.format("Failed to report deployment state and update leaseEnd. Cause: %s: %s",
                             e.getClass(), e.getMessage()));
                     }
 

@@ -16,6 +16,9 @@ public enum HostType {
     M1Medium,
     M1Large,
     M1Xlarge,
+    M2Xlarge,
+    M22xlarge,
+    M24xlarge,
     M3Medium,
     M3Large,
     M3Xlarge,
@@ -26,9 +29,6 @@ public enum HostType {
     M44xlarge,
     M410xlarge,
     M416xlarge,
-    M2Xlarge,
-    M22xlarge,
-    M24xlarge,
     Cr18xlarge,
     R3Large,
     R3Xlarge,
@@ -94,6 +94,9 @@ public enum HostType {
         put(M1Medium, "m1.medium");
         put(M1Large, "m1.large");
         put(M1Xlarge, "m1.xlarge");
+        put(M2Xlarge, "m2.xlarge");
+        put(M22xlarge, "m2.2xlarge");
+        put(M24xlarge, "m2.4xlarge");
         put(M3Medium, "m3.medium");
         put(M3Large, "m3.large");
         put(M3Xlarge, "m3.xlarge");
@@ -104,9 +107,6 @@ public enum HostType {
         put(M44xlarge, "m4.4xlarge");
         put(M410xlarge, "m4.10xlarge");
         put(M416xlarge, "m4.16xlarge");
-        put(M2Xlarge, "m2.xlarge");
-        put(M22xlarge, "m2.2xlarge");
-        put(M24xlarge, "m2.4xlarge");
         put(Cr18xlarge, "cr1.8xlarge");
         put(R3Large, "r3.large");
         put(R3Xlarge, "r3.xlarge");
