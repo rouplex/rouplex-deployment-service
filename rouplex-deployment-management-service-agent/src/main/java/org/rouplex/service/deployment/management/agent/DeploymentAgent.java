@@ -13,6 +13,7 @@ import org.rouplex.commons.configuration.Configuration;
 import org.rouplex.commons.configuration.ConfigurationManager;
 import org.rouplex.commons.utils.SecurityUtils;
 import org.rouplex.commons.utils.TimeUtils;
+import org.rouplex.commons.utils.ValidationUtils;
 import org.rouplex.service.deployment.DeploymentState;
 import org.rouplex.service.deployment.management.UpdateHostStateRequest;
 import org.rouplex.service.deployment.management.UpdateHostStateResponse;
@@ -71,7 +72,9 @@ public class DeploymentAgent implements Closeable {
 
     private long leaseEnd;
 
-    private DeploymentAgent(Configuration configuration) throws Exception {
+    public DeploymentAgent(Configuration configuration) throws Exception {
+        ValidationUtils.checkNonNullArg(configuration, "configuration");
+
         jaxrsClient = createJaxRsClient();
         leaseEnd = System.currentTimeMillis() + configuration.getAsInteger(ConfigurationKey.DefaultLeaseMillis);
 

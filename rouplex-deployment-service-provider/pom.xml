@@ -7,11 +7,11 @@
     <parent>
         <groupId>org.rouplex</groupId>
         <artifactId>rouplex-deployment-service-parent</artifactId>
-        <version>1.0.1</version>
+        <version>1.0.2-SNAPSHOT</version>
     </parent>
 
     <artifactId>rouplex-deployment-service-provider</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <dependencies>
@@ -19,28 +19,28 @@
         <dependency>
             <groupId>org.rouplex</groupId>
             <artifactId>rouplex-deployment-service-api</artifactId>
-            <version>1.0.1</version>
+            <version>1.0.2-SNAPSHOT</version>
         </dependency>
 
         <!-- Service provider always depends on the interface it is implementing -->
         <dependency>
             <groupId>org.rouplex</groupId>
             <artifactId>rouplex-deployment-management-service-api</artifactId>
-            <version>1.0.1</version>
+            <version>1.0.2-SNAPSHOT</version>
         </dependency>
 
         <!-- Some basic/common functionality-->
         <dependency>
             <groupId>org.rouplex</groupId>
             <artifactId>rouplex-commons</artifactId>
-            <version>1.0.2</version>
+            <version>1.0.6-SNAPSHOT</version>
         </dependency>
 
         <!-- EC2 api for managing remote ec2 hosts/instances -->
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-ec2</artifactId>
-            <version>1.11.115</version>
+            <version>1.11.341</version>
         </dependency>
     </dependencies>
 </project>

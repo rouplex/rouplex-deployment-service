@@ -67,6 +67,7 @@ public enum HostType {
     C42xlarge,
     C44xlarge,
     C48xlarge,
+    C518xlarge,
     Cc14xlarge,
     Cc28xlarge,
     G22xlarge,
@@ -159,6 +160,7 @@ public enum HostType {
         put(D28xlarge, "d2.8xlarge");
         put(F12xlarge, "f1.2xlarge");
         put(F116xlarge, "f1.16xlarge");
+        put(C518xlarge, "c5.18xlarge");
     }};
 
     static final Map<String, HostType> stringToEnum = new HashMap<String, HostType>() {{
